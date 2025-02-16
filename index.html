@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio Terminal</title>
+  <style>
+    /* Base terminal styling */
+    body {
+      background-color: #000;
+      color: #00FF00;
+      font-family: monospace;
+      margin: 0;
+      padding: 20px;
+    }
+    .terminal {
+      max-width: 800px;
+      margin: 0 auto;
+      border: 1px solid #333;
+      padding: 20px;
+      box-sizing: border-box;
+      min-height: 80vh;
+    }
+    .line {
+      margin: 5px 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .folder {
+      color: #00AAFF;
+      cursor: pointer;
+    }
+    .folder:hover {
+      text-decoration: underline;
+    }
+    /* Style the input field to blend in */
+    #commandInput {
+      width: calc(100% - 1em);
+      background-color: transparent;
+      color: #00FF00;
+      border: none;
+      outline: none;
+      font-family: monospace;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal" id="terminal">
+    <div class="line">Welcome to My Portfolio Terminal</div>
+    <div class="line">Type <code>ls</code> to list folders, <code>man</code> for the manual, <code>echo</code> to display folder contents, or <code>restart</code> to refresh.</div>
+    <!-- Output will appear above the input -->
+    <div id="output"></div>
+    <!-- Command input -->
+    <div class="line">
+      <span>user@portfolio:~$ </span>
+      <input type="text" id="commandInput" autofocus autocomplete="off" />
+    </div>
+  </div>
+
+  <script>
+    const commandInput = document.getElementById("commandInput");
+    const outputContainer = document.getElementById("output");
+
+    // Define your "folders" with some content for each.
+    const folders = {
+      Bio: "Hi, I'm [Your Name]! I'm a developer with a passion for building creative and innovative web experiences.",
+      Projects:
+        "Here are some projects I've worked on:\n- Project1: A cool web app.\n- Project2: An interesting mobile app.\n- Project3: A neat open source library.",
+      Resume: "Download my resume here: [Link to PDF or embed resume details].",
+    };
+
+    // Manual definitions for commands
+    const manual = {
+      ls: "Lists the available folders in the terminal (e.g., Bio, Projects, Resume). Usage: <code>ls</code>",
+      open: "Opens a folder to display its contents. Usage: <code>open [folder]</code>. Example: <code>open Bio</code>",
+      echo: "Displays the contents of a folder. Works like the <code>open</code> command. Usage: <code>echo [folder]</code>. Example: <code>echo Bio</code>",
+      restart: "Refreshes the terminal page. Usage: <code>restart</code>",
+      man: "Shows the manual of available commands. Usage: <code>man</code> or <code>man [command]</code>",
+      help: "Displays available commands. Similar to 'man'. Usage: <code>help</code>"
+    };
+
+    // Helper function to append a line to the terminal output.
+    function appendLine(text) {
+      const line = document.createElement("div");
+      line.className = "line";
+      line.innerHTML = text;
+      outputContainer.appendChild(line);
+      // Auto-scroll to the bottom
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    // Process the 'man' command.
+    function processManCommand(args) {
+      if (args.length === 0) {
+        // Display a list of all commands with brief definitions.
+        appendLine("<strong>Manual - Available Commands:</strong>");
+        for (let cmd in manual) {
+          appendLine(`<code>${cmd}</code>: ${manual[cmd]}`);
+        }
+      } else {
+        // If a specific command is requested.
+        const cmd = args[0];
+        if (manual[cmd]) {
+          appendLine(`<strong>Manual for <code>${cmd}</code>:</strong>`);
+          appendLine(manual[cmd]);
+        } else {
+          appendLine(`No manual entry for: ${cmd}`);
+        }
+      }
+    }
+
+    // Process command input from the user.
+    function processCommand(command) {
+      // Command: ls (list folders)
+      if (command === "ls") {
+        let folderList = "";
+        for (let folder in folders) {
+          // Make each folder clickable
+          folderList += `<span class="folder" onclick="openFolder('${folder}')">${folder}</span>  `;
+        }
+        appendLine(folderList);
+      }
+      // Command: open <folder>
+      else if (command.startsWith("open ")) {
+        const folderName = command.split(" ")[1];
+        if (folders[folderName]) {
+          appendLine(`<strong>${folderName}:</strong>`);
+          folders[folderName].split("\n").forEach((line) => appendLine(line));
+        } else {
+          appendLine(`No such folder: ${folderName}`);
+        }
+      }
+      // Command: echo <folder> (similar to open)
+      else if (command.startsWith("echo ")) {
+        const folderName = command.split(" ")[1];
+        if (folders[folderName]) {
+          appendLine(`<strong>${folderName}:</strong>`);
+          folders[folderName].split("\n").forEach((line) => appendLine(line));
+        } else {
+          appendLine(`No such folder: ${folderName}`);
+        }
+      }
+      // Command: restart (refresh the page)
+      else if (command === "restart") {
+        appendLine("Restarting terminal...");
+        setTimeout(() => {
+          location.reload();
+        }, 500);
+      }
+      // Command: man or man [command]
+      else if (command.startsWith("man")) {
+        const parts = command.split(" ").filter(part => part);
+        parts.shift(); // Remove the first element ("man")
+        processManCommand(parts);
+      }
+      // Command: help (alias for manual)
+      else if (command === "help") {
+        processManCommand([]);
+      } else {
+        appendLine(`Command not recognized: ${command}`);
+      }
+    }
+
+    // Function to open a folder when the folder name is clicked.
+    function openFolder(folderName) {
+      appendLine(`user@portfolio:~$ open ${folderName}`);
+      processCommand(`open ${folderName}`);
+    }
+
+    // Make the openFolder function available globally for inline onclick calls.
+    window.openFolder = openFolder;
+
+    // Listen for user input on the command line.
+    commandInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        const command = commandInput.value.trim();
+        appendLine(`user@portfolio:~$ ${command}`);
+        processCommand(command);
+        commandInput.value = "";
+      }
+    });
+  </script>
+</body>
+</html>
